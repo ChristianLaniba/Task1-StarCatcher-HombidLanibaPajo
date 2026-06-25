@@ -21,18 +21,7 @@ const config = {
 
 new Phaser.Game(config);
 
-let player;
-let cursors;
-let ground;
-let platforms;
-let stars;
-let bombs;
-
-let score = 0;
-let scoreText;
-let gameOver = false;
-let lastScaleMilestone = 0;
-
+// Colors array for player tint
 const colors = [
     0xff0000,
     0xff7f00,
@@ -42,8 +31,6 @@ const colors = [
     0x4b0082,
     0x9400d3
 ];
-
-let colorIndex = 0;
 
 function preload() {
     this.load.image("bg", "assets/bg.png");
@@ -58,53 +45,60 @@ function preload() {
 }
 
 function create() {
+    // Initialize all variables as scene properties
+    this.score = 0;
+    this.gameOver = false;
+    this.lastScaleMilestone = 0;
+    this.colorIndex = 0;
+
     this.add.image(400, 300, "bg").setDisplaySize(800, 600);
 
-    ground = this.physics.add.staticGroup();
-
-    const base = ground.create(400, 580, "mainGround");
-
+    // Create ground
+    this.ground = this.physics.add.staticGroup();
+    const base = this.ground.create(400, 580, "mainGround");
     base.setScale(800 / base.width, 100 / base.height);
     base.refreshBody();
-
     base.body.setSize(base.displayWidth, 30);
     base.body.setOffset(0, base.displayHeight - 80);
 
-    platforms = this.physics.add.staticGroup();
-
+    // Create platforms
+    this.platforms = this.physics.add.staticGroup();
+    
     const platformPositions = [
         { x: 150, y: 450 },
-        { x: 440, y: 360 },
+        { x: 440, y: 380 },
         { x: 400, y: 280 },
         { x: 750, y: 410 },
-        { x: 90, y: 250 },
-        { x: 650, y: 150 },
+        { x: 90, y: 310 },
+        { x: 650, y: 175 },
         { x: 350, y: 100 },
-        
+        { x: 250, y: 180 }
     ];
 
     platformPositions.forEach(pos => {
-        const p = platforms.create(pos.x, pos.y, "platform");
+        const p = this.platforms.create(pos.x, pos.y, "platform");
         p.setScale(0.5);
         p.refreshBody();
         p.body.setSize(p.displayWidth, 20);
         p.body.setOffset(0, p.displayHeight - 20);
     });
 
-    player = this.physics.add.sprite(100, 400, "player");
+    // Create player
+    this.player = this.physics.add.sprite(100, 400, "player");
+    this.player.setScale(0.1);
+    this.player.setBounce(0.1);
+    this.player.setCollideWorldBounds(true);
+    this.player.setSize(180, 425);
+    this.player.setOffset(180, 180);
 
-    player.setScale(0.1);
-    player.setBounce(0.1);
-    player.setCollideWorldBounds(true);
+    // Add collisions
+    this.physics.add.collider(this.player, this.ground);
+    this.physics.add.collider(this.player, this.platforms);
 
-    player.setSize(180, 425);
-    player.setOffset(180, 180);
+    // Controls
+    this.cursors = this.input.keyboard.createCursorKeys();
 
-    this.physics.add.collider(player, ground);
-    this.physics.add.collider(player, platforms);
-
-    cursors = this.input.keyboard.createCursorKeys();
-
+    // Animations
     this.anims.create({
         key: "idle",
         frames: [{ key: "player", frame: 0 }],
@@ -128,23 +122,99 @@ function create() {
         frameRate: 1
     });
 
-    player.play("idle");
+    this.player.play("idle");
 
-    stars = this.physics.add.group();
+    // Create stars group
+    this.stars = this.physics.add.group();
 
-    spawnStar(this);
+    // Define methods as arrow functions to preserve 'this' context
+    this.collectStar = (player, star) => {
+        star.destroy();
+        this.score++;
+        this.scoreText.setText("Stars Collected: " + this.score);
+        
+        // Log to console for verification
+        console.log("Star collected! Total stars: " + this.score);
 
-    this.physics.add.collider(stars, ground);
-    this.physics.add.collider(stars, platforms);
-    this.physics.add.overlap(player, stars, collectStar, null, this);
+        player.setTint(colors[this.colorIndex]);
+        this.colorIndex = (this.colorIndex + 1) % colors.length;
 
-    bombs = this.physics.add.group();
+        if (Math.floor(this.score / 5) > this.lastScaleMilestone) {
+            this.lastScaleMilestone++;
+            player.setScale(player.scaleX * 1.1);
+        }
 
-    this.physics.add.collider(bombs, ground);
-    this.physics.add.collider(bombs, platforms);
-    this.physics.add.collider(player, bombs, hitBomb, null, this);
+        // Spawn new star
+        const x = Phaser.Math.Between(50, 750);
+        const newStar = this.stars.create(x, 0, "star");
+        newStar.setScale(0.5);
+        newStar.setCircle(newStar.width / 2);
+        newStar.setBounce(0);
+        newStar.setCollideWorldBounds(true);
 
-    scoreText = this.add.text(520, 20, "Stars Collected: 0", {
+        // Spawn bomb
+        const bombX = player.x < 400 ? Phaser.Math.Between(420, 780) : Phaser.Math.Between(20, 380);
+        const bomb = this.bombs.create(bombX, 0, "bomb");
+        bomb.body.setOffset(0, 70);
+        bomb.setScale(0.5);
+        bomb.setCircle(bomb.displayWidth / 2);
+        bomb.setBounce(1);
+        bomb.setCollideWorldBounds(true);
+        bomb.setVelocity(Phaser.Math.Between(-220, 220), 20);
+    };
+
+    this.hitBomb = (player, bomb) => {
+        this.physics.pause();
+        player.setTint(0xff0000);
+        player.anims.stop();
+        this.gameOver = true;
+
+        this.add.text(260, 200, "GAME OVER", {
+            fontSize: "48px",
+            fontFamily: "'Comic Sans MS', 'Comic Sans', cursive",
+            color: "#7f0000",
+            fontStyle: "bold"
+        });
+        
+        console.log("Game Over! Final score: " + this.score);
+    };
+
+    // Spawn initial stars
+    for (let i = 0; i < 1; i++) {
+        const x = Phaser.Math.Between(50, 750);
+        const star = this.stars.create(x, 0, "star");
+        star.setScale(0.5);
+        star.setCircle(star.width / 2);
+        star.setBounce(0);
+        star.setCollideWorldBounds(true);
+    }
+
+    // Spawn stars on upper platforms (stretch goal)
+
+    
+    const upperStar2 = this.stars.create(250, 150, "star");
+    upperStar2.setScale(0.5);
+    upperStar2.setCircle(upperStar2.width / 2);
+    
+    const upperStar3 = this.stars.create(650, 120, "star");
+    upperStar3.setScale(0.5);
+    upperStar3.setCircle(upperStar3.width / 2);
+
+    // Add collisions for stars
+    this.physics.add.collider(this.stars, this.ground);
+    this.physics.add.collider(this.stars, this.platforms);
+    this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
+
+    // Create bombs group
+    this.bombs = this.physics.add.group();
+
+    // Add collisions for bombs
+    this.physics.add.collider(this.bombs, this.ground);
+    this.physics.add.collider(this.bombs, this.platforms);
+    this.physics.add.collider(this.player, this.bombs, this.hitBomb, null, this);
+
+    // Score text
+    this.scoreText = this.add.text(520, 20, "Stars Collected: 0", {
         fontSize: "28px",
         fontFamily: "'Comic Sans MS', 'Comic Sans', cursive",
         color: "#ffffff",
@@ -153,93 +223,36 @@ function create() {
 }
 
 function update() {
-    if (gameOver) return;
+    if (this.gameOver) return;
 
     let speed = 250;
     let moving = false;
 
-    if (cursors.shift.isDown) speed = 280;
-
-    if (cursors.left.isDown) {
-        player.setVelocityX(-speed);
-        player.setFlipX(true);
+    if (this.cursors.left.isDown) {
+        this.player.setVelocityX(-speed);
+        this.player.setFlipX(true);
         moving = true;
     }
-    else if (cursors.right.isDown) {
-        player.setVelocityX(speed);
-        player.setFlipX(false);
+    else if (this.cursors.right.isDown) {
+        this.player.setVelocityX(speed);
+        this.player.setFlipX(false);
         moving = true;
     }
     else {
-        player.setVelocityX(0);
+        this.player.setVelocityX(0);
     }
 
-    if (cursors.up.isDown && player.body.blocked.down) {
-        player.setVelocityY(-520);
+    if (this.cursors.up.isDown && this.player.body.blocked.down) {
+        this.player.setVelocityY(-520);
     }
 
-    if (!player.body.blocked.down) {
-        player.play("jump", true);
+    if (!this.player.body.blocked.down) {
+        this.player.play("jump", true);
     }
     else if (moving) {
-        player.play(speed > 250 ? "run" : "walk", true);
+        this.player.play("walk", true);
     }
     else {
-        player.play("idle", true);
+        this.player.play("idle", true);
     }
-}
-
-function spawnStar(scene) {
-    const x = Phaser.Math.Between(50, 750);
-    const star = stars.create(x, 0, "star");
-    star.setScale(0.5);
-    star.setCircle(star.width / 2);
-    star.setBounce(0);
-    star.setCollideWorldBounds(true);
-}
-
-function collectStar(player, star) {
-    star.destroy();
-
-    score++;
-    scoreText.setText("Stars Collected: " + score);
-
-    player.setTint(colors[colorIndex]);
-
-    colorIndex = (colorIndex + 1) % colors.length;
-
-    if (Math.floor(score / 5) > lastScaleMilestone) {
-        lastScaleMilestone++;
-        player.setScale(player.scaleX * 1.1);
-    }
-
-    spawnStar(this);
-
-    const x = player.x < 400 ? Phaser.Math.Between(420, 780) : Phaser.Math.Between(20, 380);
-    const bomb = bombs.create(x, 0, "bomb");
-
-    bomb.body.setOffset(0, 70);
-
-    bomb.setScale(0.5);
-    bomb.setCircle(bomb.displayWidth / 2);
-    bomb.setBounce(1);
-    bomb.setCollideWorldBounds(true);
-
-    bomb.setVelocity(Phaser.Math.Between(-220, 220), 20);
-}
-
-function hitBomb(player, bomb) {
-    this.physics.pause();
-
-    player.setTint(0xff0000);
-    player.anims.stop();
-
-    gameOver = true;
-
-    this.add.text(260, 200, "GAME OVER", {
-        fontSize: "48px",
-        fontFamily: "'Comic Sans MS', 'Comic Sans', cursive",
-        color: "#7f0000",
-        fontStyle: "bold"
-    });
 }
