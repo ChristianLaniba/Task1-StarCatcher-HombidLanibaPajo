@@ -172,6 +172,8 @@ function create() {
             color: "#7f0000",
             fontStyle: "bold"
         });
+        
+        console.log("Game Over! Final score: " + this.score);
     };
 
     //spawn initial stars
