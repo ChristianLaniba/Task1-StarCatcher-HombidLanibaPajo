@@ -21,7 +21,6 @@ const config = {
 
 new Phaser.Game(config);
 
-// Colors array for player tint
 const colors = [
     0xff0000,
     0xff7f00,
@@ -190,8 +189,6 @@ function create() {
     }
 
     // Spawn stars on upper platforms (stretch goal)
-
-    
     const upperStar2 = this.stars.create(250, 150, "star");
     upperStar2.setScale(0.5);
     upperStar2.setCircle(upperStar2.width / 2);
@@ -200,20 +197,20 @@ function create() {
     upperStar3.setScale(0.5);
     upperStar3.setCircle(upperStar3.width / 2);
 
-    // Add collisions for stars
+    //collisions for stars
     this.physics.add.collider(this.stars, this.ground);
     this.physics.add.collider(this.stars, this.platforms);
     this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
 
-    // Create bombs group
+    //bomb group
     this.bombs = this.physics.add.group();
 
-    // Add collisions for bombs
+    //collisions for bombs
     this.physics.add.collider(this.bombs, this.ground);
     this.physics.add.collider(this.bombs, this.platforms);
     this.physics.add.collider(this.player, this.bombs, this.hitBomb, null, this);
 
-    // Score text
+    //score text
     this.scoreText = this.add.text(520, 20, "Stars Collected: 0", {
         fontSize: "28px",
         fontFamily: "'Comic Sans MS', 'Comic Sans', cursive",
