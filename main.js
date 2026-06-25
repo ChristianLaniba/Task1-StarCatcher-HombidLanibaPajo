@@ -153,7 +153,7 @@ function create() {
         const bombX = player.x < 400 ? Phaser.Math.Between(420, 780) : Phaser.Math.Between(20, 380);
         const bomb = this.bombs.create(bombX, 0, "bomb");
         bomb.body.setOffset(0, 70);
-        bomb.setScale(0.5);
+        bomb.setScale(0.3);
         bomb.setCircle(bomb.displayWidth / 2);
         bomb.setBounce(1);
         bomb.setCollideWorldBounds(true);
