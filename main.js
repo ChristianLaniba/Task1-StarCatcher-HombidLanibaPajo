@@ -155,7 +155,7 @@ function create() {
         bomb.body.setOffset(0, 70);
         bomb.setScale(0.3);
         bomb.setCircle(bomb.displayWidth / 2);
-        bomb.setBounce(1);
+        bomb.setBounce(0.9);
         bomb.setCollideWorldBounds(true);
         bomb.setVelocity(Phaser.Math.Between(-220, 220), 20);
     };
