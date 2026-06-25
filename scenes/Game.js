@@ -1,3 +1,4 @@
+// Game.js
 const colors = [
     0xff0000,
     0xff7f00,
@@ -14,21 +15,19 @@ export default class Game extends Phaser.Scene {
     }
 
     preload() {
-        // All loading is now handled in Boot.js
-        // This can remain empty or contain scene-specific preloads
     }
 
     create() {
-        // Score
+        //score setup
         this.score = 0;
         this.gameOver = false;
         this.lastScaleMilestone = 0;
         this.colorIndex = 0;
 
-        // Background
+        //background
         this.add.image(400, 300, "bg").setDisplaySize(800, 600);
 
-        // Ground - static platform at bottom
+        //ground platform
         this.ground = this.physics.add.staticGroup();
         const base = this.ground.create(400, 580, "mainGround");
         base.setScale(800 / base.width, 100 / base.height);
@@ -36,7 +35,7 @@ export default class Game extends Phaser.Scene {
         base.body.setSize(base.displayWidth, 30);
         base.body.setOffset(0, base.displayHeight - 80);
 
-        // Platforms
+        //platforms
         this.platforms = this.physics.add.staticGroup();
         
         const platformPositions = [
@@ -58,7 +57,7 @@ export default class Game extends Phaser.Scene {
             p.body.setOffset(0, p.displayHeight - 20);
         });
 
-        // Player
+        //player setup
         this.player = this.physics.add.sprite(100, 400, "player");
         this.player.setScale(0.1);
         this.player.setBounce(0.1);
@@ -66,14 +65,14 @@ export default class Game extends Phaser.Scene {
         this.player.setSize(180, 425);
         this.player.setOffset(180, 180);
 
-        // Colliders
+        //colliders
         this.physics.add.collider(this.player, this.ground);
         this.physics.add.collider(this.player, this.platforms);
 
-        // Controls
+        //controls
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // Animations
+        //animations
         this.anims.create({
             key: "idle",
             frames: [{ key: "player", frame: 0 }],
@@ -99,10 +98,10 @@ export default class Game extends Phaser.Scene {
 
         this.player.play("idle");
 
-        // Stars group
+        //stars group
         this.stars = this.physics.add.group();
 
-        // Star collection method
+        //collect star method
         this.collectStar = (player, star) => {
             star.destroy();
             this.score++;
@@ -118,7 +117,7 @@ export default class Game extends Phaser.Scene {
                 player.setScale(player.scaleX * 1.1);
             }
 
-            // Spawn new star
+            //spawn new star
             const x = Phaser.Math.Between(50, 750);
             const newStar = this.stars.create(x, 0, "star");
             newStar.setScale(0.5);
@@ -126,7 +125,7 @@ export default class Game extends Phaser.Scene {
             newStar.setBounce(0);
             newStar.setCollideWorldBounds(true);
 
-            // Spawn bomb
+            //spawn bomb
             const bombX = player.x < 400 ? Phaser.Math.Between(420, 780) : Phaser.Math.Between(20, 380);
             const bomb = this.bombs.create(bombX, 0, "bomb");
             bomb.body.setOffset(0, 70);
@@ -137,7 +136,7 @@ export default class Game extends Phaser.Scene {
             bomb.setVelocity(Phaser.Math.Between(-220, 220), 20);
         };
 
-        // Bomb hit method
+        //bomb hit method
         this.hitBomb = (player, bomb) => {
             this.physics.pause();
             player.setTint(0xff0000);
@@ -154,7 +153,7 @@ export default class Game extends Phaser.Scene {
             console.log("Game Over! Final score: " + this.score);
         };
 
-        // Spawn initial stars
+        //spawn initial stars
         for (let i = 0; i < 1; i++) {
             const x = Phaser.Math.Between(50, 750);
             const star = this.stars.create(x, 0, "star");
@@ -164,7 +163,7 @@ export default class Game extends Phaser.Scene {
             star.setCollideWorldBounds(true);
         }
 
-        // Extra stars on upper platforms
+        //extra stars on upper platforms
         const upperStar2 = this.stars.create(250, 150, "star");
         upperStar2.setScale(0.5);
         upperStar2.setCircle(upperStar2.width / 2);
@@ -173,20 +172,20 @@ export default class Game extends Phaser.Scene {
         upperStar3.setScale(0.5);
         upperStar3.setCircle(upperStar3.width / 2);
 
-        // Star collisions and overlap
+        //star collisions and overlap
         this.physics.add.collider(this.stars, this.ground);
         this.physics.add.collider(this.stars, this.platforms);
         this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
 
-        // Bombs group
+        //bombs group
         this.bombs = this.physics.add.group();
 
-        // Bomb collisions
+        //bomb collisions
         this.physics.add.collider(this.bombs, this.ground);
         this.physics.add.collider(this.bombs, this.platforms);
         this.physics.add.collider(this.player, this.bombs, this.hitBomb, null, this);
 
-        // Score text
+        //score text
         this.scoreText = this.add.text(520, 20, "Stars Collected: 0", {
             fontSize: "28px",
             fontFamily: "'Comic Sans MS', 'Comic Sans', cursive",
@@ -201,7 +200,7 @@ export default class Game extends Phaser.Scene {
         let speed = 250;
         let moving = false;
 
-        // Movement
+        //movement
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-speed);
             this.player.setFlipX(true);
@@ -216,12 +215,12 @@ export default class Game extends Phaser.Scene {
             this.player.setVelocityX(0);
         }
 
-        // Jump
+        //jump
         if (this.cursors.up.isDown && this.player.body.blocked.down) {
             this.player.setVelocityY(-520);
         }
 
-        // Animation
+        //animation
         if (!this.player.body.blocked.down) {
             this.player.play("jump", true);
         }
